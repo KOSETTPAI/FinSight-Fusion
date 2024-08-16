@@ -9,5 +9,4 @@ def data_extraction(dir):
 
     return text
 
-
 # print(data_extraction(dir=invoice_dir))

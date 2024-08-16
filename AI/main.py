@@ -4,7 +4,7 @@ from langchain_core.messages import HumanMessage
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.output_parsers import StrOutputParser
 
-financial_document = "AI/Apex Solutions LLC.pdf"
+financial_document = "Data/Apex Solutions LLC.pdf"
 
 prompt = ChatPromptTemplate.from_messages(
     [

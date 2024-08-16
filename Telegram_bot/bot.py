@@ -1,23 +1,51 @@
-import telebot
+from telegram import Update
+from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes, MessageHandler, filters
+import os
+from config import TELEGRAM_BOT_TOKEN
+from financial_reporting import main
 
-# Replace ‘YOUR_API_TOKEN’ with the API token you received from the BotFather
-API_TOKEN = "6941904293:AAHMBb2_Mq1-tX6zWRp43SP4LMuwVCpnve4"
+SAVE_FOLDER = "uploaded_files"  
 
-bot = telebot.TeleBot(API_TOKEN)
+# Create the folder if it doesn't exist
+if not os.path.exists(SAVE_FOLDER):
+    os.makedirs(SAVE_FOLDER)
 
-# Define a command handler
-@bot.message_handler(commands=['start', 'help'])
-def send_welcome(message):
-    bot.reply_to(message, "Welcome to YourBot! Type /info to get more information.")
+async def hello(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    await update.message.reply_text(f'Hello {update.effective_user.first_name}')
 
-@bot.message_handler(commands=['info'])
-def send_info(message):
-    bot.reply_to(message, "This is a simple Telegram bot implemented in Python.")
+async def info(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    await update.message.reply_text(f'This is the telegram chatbot that will calculate the financial documents')
 
-# Define a message handler
-@bot.message_handler(func=lambda message: True)
-def echo_all(message):
-    bot.reply_to(message, message.text)
+async def send_document(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    chat_id = update.message.chat_id
+    file_path = "Data/Bangan1.jpg"
+    
+    if os.path.exists(file_path):
+        with open(file_path, 'rb') as document:
+            await context.bot.send_document(chat_id=chat_id, document=document, read_timeout=120)
+    else:
+        await update.message.reply_text('Sorry, the document could not be found.')
 
-# Start the bot
-bot.polling()
+async def file_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    file = await context.bot.get_file(update.message.document.file_id)
+    
+    file_path = os.path.join(SAVE_FOLDER, update.message.document.file_name)
+    
+    # await file.download_to_drive(custom_path=file_path)  # Use download instead of download_to_drive
+    # await update.message.reply_text(f'File saved to {file_path}')
+
+    await file.download_to_drive(custom_path=file_path)
+
+    output = main(file_path=file_path)
+
+    await update.message.reply_text(output)
+
+
+app = ApplicationBuilder().token(TELEGRAM_BOT_TOKEN).build()
+
+app.add_handler(CommandHandler("hello", hello))
+app.add_handler(CommandHandler("info", info))
+app.add_handler(CommandHandler("send", send_document))
+app.add_handler(MessageHandler(filters.Document.ALL, file_handler))
+
+app.run_polling()
